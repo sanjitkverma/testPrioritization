@@ -11,7 +11,7 @@ toVersion = [13, 50, 33, 50, 14]
 lastVersions = [26, 133, 65, 106, 27]
 
 
-file = open("../../WTP-data/bugprediction_exectime.txt","a")
+file = open("../../../WTP-data/bugprediction_exectime.txt", "a")
 for index, project in enumerate(projects):
 	print('*** Project: %s ***' % project)
 	lastVersion = lastVersions[index]
