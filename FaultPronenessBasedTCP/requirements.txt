@@ -35,7 +35,7 @@ scikit-learn
 scipy
 six
 tensorboard
-tensorflow
+tensorflow==2.18.0
 tensorflow-estimator
 termcolor
 urllib3
