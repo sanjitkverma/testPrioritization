@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+'''
+This script implements the bug prediction model using Keras form the paper. It preprocesses project data, trains a neural network model, and evaluates bug predictions.
+The predictions are logged and saved for further analysis.
+'''
+
 # get_ipython().run_line_magic('matplotlib', 'inline')
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +21,19 @@ from tensorflow.keras.optimizers import Adam
 
 
 def readData(projectName, versionNum):
+    '''
+    Reads and preprocesses the dataset for a specific project and version.
+
+    If the data file is compressed, it extracts it before reading. The dataset
+    is expected to be in CSV format.
+
+    Args:
+        projectName (str): The name of the project.
+        versionNum (int): The version number of the project.
+
+    Returns:
+        pandas.DataFrame: The loaded dataset as a DataFrame.
+    '''
     dataPath = '../../WTP-data'
     projectDataPath = '%s/%s/%d' % (dataPath, projectName, versionNum)
     dataFileName = '%s/Metrics.csv' % (projectDataPath)
@@ -35,6 +53,21 @@ def readData(projectName, versionNum):
 # 	return pd.read_csv(dataFileName)
 
 def kerasBugPrediction(projectName, versionNum, lastVersion):
+    '''
+    Trains and evaluates a neural network model for bug prediction.
+
+    Preprocesses data using standardization and log transformation for large-value features.
+    Trains the model with balanced positive and negative samples, then evaluates its performance
+    on the current project version.
+
+    Args:
+        projectName (str): The name of the project.
+        versionNum (int): The current version number of the project.
+        lastVersion (int): The latest version number available for training data.
+
+    Returns:
+        float: The time taken to perform predictions on the current version.
+    '''
     dataPath = '../../WTP-data'
     for prevVersionNum in range(versionNum + 1, lastVersion + 1):
         dfPrevVersion = readData(projectName, prevVersionNum)
@@ -83,6 +116,17 @@ def kerasBugPrediction(projectName, versionNum, lastVersion):
 
     import tensorflow as tf
     def f1_loss(y_true, y_pred):
+        '''
+        Custom F1 loss function for model optimization.
+        Ensures a balance between precision and recall in predictions.
+
+        Args:
+            y_true (Tensor): Ground truth labels.
+            y_pred (Tensor): Predicted labels.
+
+        Returns:
+            Tensor: The computed F1 loss value.
+        '''
         tp = tf.keras.backend.sum(tf.keras.backend.cast(y_true * y_pred, 'float'), axis=0)
         tn = tf.keras.backend.sum(tf.keras.backend.cast((1 - y_true) * (1 - y_pred), 'float'), axis=0)
         fp = tf.keras.backend.sum(tf.keras.backend.cast((1 - y_true) * y_pred, 'float'), axis=0)

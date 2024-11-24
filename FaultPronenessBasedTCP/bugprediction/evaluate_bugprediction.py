@@ -1,8 +1,25 @@
+'''
+This script performs bug prediction evaluation for our software libraries.
+It evaluates bug prediction results against real bugs for specific versions of each project.
+The results are written to evaluation files and summarized across versions for each project.
+'''
+
 import numpy as np
 import pandas as pd
 import h5py
 
 def findRowIndex(data, value):
+	'''
+    Finds the index of a specific value in a dataset.
+
+    Args:
+        data (numpy array): The array to search.
+        value (str): The value to find.
+
+    Returns:
+        int: Index of the value if found, otherwise -1.
+    '''
+
 	for i in range(0, data.shape[0]):
 		print(str(data[i]),"<>",value)
 		if (str(data[i]) == value):
@@ -10,6 +27,19 @@ def findRowIndex(data, value):
 	return -1
 
 def runBugpredictionEvaluation(project, versionNumber):
+	'''
+    Runs bug prediction evaluation for a specific project version.
+
+    Reads bug prediction results and compares them against actual bug-fix data.
+    Calculates evaluation metrics based on the accuracy of predictions.
+
+    Args:
+        project (str): The name of the project.
+        versionNumber (int): The version number to evaluate.
+
+    Returns:
+        tuple: Evaluation score and probability score.
+    '''
 	dataPath = "../../WTP-data/%s/%d" % (project, versionNumber)
 
 	h5FileAddress = '%s/TestCoverage.h5' % dataPath

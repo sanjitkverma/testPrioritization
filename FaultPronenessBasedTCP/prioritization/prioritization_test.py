@@ -1,3 +1,7 @@
+# This script defines a function `runPrioritization` for evaluating test prioritization strategies.
+# It calculates various prioritization scores for a given project version, including total,
+# additional, max-weighted, and cross-project strategies. Results are saved to output files.
+
 source("prioritization_core.r")
 library(rhdf5)
 runPrioritization = function(versionNumber) {

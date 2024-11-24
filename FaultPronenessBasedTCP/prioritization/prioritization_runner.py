@@ -1,3 +1,8 @@
+'''
+This script evaluates test case prioritization strategies for multiple software projects.
+It calculates execution times for both additional and total prioritization techniques
+over specified versions and logs the average execution times per project.
+'''
 import prioritization as pr
 
 alphaRangeNum = 5

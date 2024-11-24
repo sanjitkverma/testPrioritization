@@ -1,3 +1,9 @@
+'''
+This script defines a function `runPrioritization` to evaluate test case prioritization strategies
+for a given software project version. It calculates APFD (Average Percentage of Faults Detected) 
+scores for additional and total prioritization strategies using weighted probabilities.
+'''
+
 import numpy as np
 import pandas as pd
 import prioritization_core as pc
@@ -7,12 +13,36 @@ import zipfile
 import time
 
 def findRowIndex(data, value):
+	'''
+    Finds the row index of a specific value in the dataset.
+
+    Args:
+        data (numpy array): Array of values to search in.
+        value (str): The value to find.
+
+    Returns:
+        int: Index of the value if found, otherwise -1.
+    '''
 	for i in range(0, data.shape[0]):
 		if (str(data[i]) == value):
 			return i
 	return -1
 
 def runPrioritization(project, versionNumber, alphaRangeNum):
+	'''
+    Runs the prioritization evaluation for a specific project version.
+
+    Reads bug prediction and test coverage data, calculates APFD scores for
+    additional and total prioritization strategies, and saves the results.
+
+    Args:
+        project (str): Name of the project.
+        versionNumber (int): Version number of the project.
+        alphaRangeNum (int): Number of alpha values for weighting.
+
+    Returns:
+        tuple: Average execution times for additional and total prioritization strategies.
+    '''
 	dataPath = '../../WTP-data'
 	projectDataPath = '%s/%s/%d' % (dataPath, project, versionNumber)
 
