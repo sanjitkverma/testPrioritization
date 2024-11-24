@@ -15,24 +15,24 @@ import numpy as np
 from pandas import Categorical
 
 def effectSize(lst1, lst2):
-	return improvement(lst1, lst2)
+    return improvement(lst1, lst2)
+
 
 def cliffsDelta(lst1, lst2, **dull):
-
     """Returns delta and true if there are more than 'dull' differences"""
     if not dull:
-        dull = {'small': 0.147, 'medium': 0.33, 'large': 0.474} # effect sizes from (Hess and Kromrey, 2004)
+        dull = {'small': 0.147, 'medium': 0.33, 'large': 0.474}  # effect sizes from (Hess and Kromrey, 2004)
     m, n = len(lst1), len(lst2)
     lst2 = sorted(lst2)
     j = more = less = 0
     for repeats, x in runs(sorted(lst1)):
         while j <= (n - 1) and lst2[j] < x:
             j += 1
-        more += j*repeats
+        more += j * repeats
         while j <= (n - 1) and lst2[j] == x:
             j += 1
-        less += (n - j)*repeats
-    d = (more - less) / (m*n)
+        less += (n - j) * repeats
+    d = (more - less) / (m * n)
     size = lookup_size(d, dull)
     return d, size
 
@@ -63,27 +63,30 @@ def runs(lst):
         one = two
     yield j - i + 1, two
 
-def odds_ratio(x,y):
-	n = len(x)
-	a = sum(x>y)
-	b = n-a
-	p = 0.01
-	psi = ((a+p)/(n+p-a))/((b+p)/(n-p-b))
-	return psi
 
-def improvement(x,y):
-	n = len(x)
-	a = 0
-	for i in range(0,n):
-		a = a + x[i]/y[i]
-	improvement = (a/n - 1)*100
-	return improvement
+def odds_ratio(x, y):
+    n = len(x)
+    a = sum(x > y)
+    b = n - a
+    p = 0.01
+    psi = ((a + p) / (n + p - a)) / ((b + p) / (n - p - b))
+    return psi
 
-def cohen_d(x,y):
+
+def improvement(x, y):
+    n = len(x)
+    a = 0
+    for i in range(0, n):
+        a = a + x[i] / y[i]
+    improvement = (a / n - 1) * 100
+    return improvement
+
+
+def cohen_d(x, y):
     nx = len(x)
     ny = len(y)
     dof = nx + ny - 2
-    return (mean(x) - mean(y)) / sqrt(((nx-1)*std(x, ddof=1) ** 2 + (ny-1)*std(y, ddof=1) ** 2) / dof)
+    return (mean(x) - mean(y)) / sqrt(((nx - 1) * std(x, ddof=1) ** 2 + (ny - 1) * std(y, ddof=1) ** 2) / dof)
 
 
 def VD_A(treatment: List[float], control: List[float]):
@@ -126,155 +129,190 @@ def VD_A(treatment: List[float], control: List[float]):
     return estimate, magnitude
 
 
-projects = ['Chart', 'Closure', 'Lang', 'Math', 'Time']
-fromVersion = [1, 1, 1, 1, 1]
-toVersion = [13, 50, 33, 50, 14]
+# projects = ['Chart', 'Closure', 'Lang', 'Math', 'Time']
+# fromVersion = [1, 1, 1, 1, 1]
+# toVersion = [13, 50, 33, 50, 14]
+
+projects = ['Chart', 'Time']
+fromVersion = [1,1]
+toVersion = [13,14]
 
 matplotlib.rcParams.update({'font.size': 14})
 
 pd.set_option('display.max_columns', 1000)
 
+
 def readResults(fileName, fromVersion, toVersion):
-	versionsSummed = 0
+    versionsSummed = 0
+    versions = pd.Series()
+    dataValsDp = pd.DataFrame()
+    dataValsStd = pd.DataFrame()
 
-	versions = pd.Series()
-	dataValsDp = pd.DataFrame()
-	dataValsStd = pd.DataFrame()
+    for versionNumber in range(fromVersion, toVersion):
+        dataPath = "../../WTP-data/%s/%d" % (project, versionNumber)
+        filePath = '%s/%s' % (dataPath, fileName)
+        if (os.path.isfile(filePath)):
+            print("Reading %s" % filePath)
+            results = pd.read_csv(filePath, delimiter=',')
 
-	for versionNumber in range(fromVersion, toVersion):
-		dataPath = "../../WTP-data/%s/%d" % (project, versionNumber)
-		filePath = '%s/%s' % (dataPath, fileName)
-		if (os.path.isfile(filePath)):
-			print("Reading %s" % filePath)
-			results = pd.read_csv(filePath, delimiter=',')
-			
-			if versionsSummed==0:
-				dataValsMean = results
-			else:
-				dataValsMean = dataValsMean + results
+            if versionsSummed == 0:
+                dataValsMean = results
+            else:
+                dataValsMean = dataValsMean + results
 
-			versions = versions.append(pd.Series([versionNumber]), ignore_index=True)
-			dataValsStd = dataValsStd.append(results[results.C_dp==0.0])
-			dataValsDp = dataValsDp.append(results[results.C_dp==0.7])
+            versions = pd.concat([versions, pd.Series([versionNumber])], ignore_index=True)
+            dataValsStd = pd.concat([dataValsStd, results[results.C_dp == 0.0]], ignore_index=True)
+            dataValsDp = pd.concat([dataValsDp, results[results.C_dp == 0.8]], ignore_index=True)
 
+            versionsSummed = versionsSummed + 1
+        else:
+            print("Skipping %s" % filePath)
 
-			versionsSummed = versionsSummed+1
-		else:
-			print("Skipping %s" % filePath)
+    dataValsMean = dataValsMean / versionsSummed
+    print(dataValsDp)
+    output_dir = '../../WTP-data/aggregate'
+    os.makedirs(output_dir, exist_ok=True)  # Creates the directory if it doesn't exist
+    dataValsMean.to_csv(f'{output_dir}/{project}.csv', index=False)
 
-	dataValsMean = dataValsMean / versionsSummed
-	#print(dataValsMean)
-	dataValsMean.to_csv('../../WTP-data/aggregate/%s.csv' % project, index=False)
+    dataValsDp.index = range(0, dataValsDp.shape[0])
+    dataValsStd.index = range(0, dataValsStd.shape[0])
 
-	dataValsDp.index = range(0, dataValsDp.shape[0])
-	dataValsStd.index = range(0, dataValsStd.shape[0])
+    #	print(ttest_ind(dataValsStd['additional'], dataValsStd['total']))
 
-#	print(ttest_ind(dataValsStd['additional'], dataValsStd['total']))
-
-	dataValsDp.insert(0, 'version', versions)
-	dataValsDp.insert(1, 'additional0', dataValsStd['additional'])
-	dataValsDp.insert(2, 'total0', dataValsStd['total'])
-	dataValsDp = dataValsDp.drop('C_dp', axis=1)
-	return dataValsMean, dataValsDp
+    dataValsDp.insert(0, 'version', versions)
+    print("dataValsStd columns:", dataValsStd.columns)
+    dataValsDp.insert(1, 'additional0', dataValsStd['additional'])
+    dataValsDp.insert(2, 'total0', dataValsStd['total'])
+    dataValsDp = dataValsDp.drop('C_dp', axis=1)
+    print(dataValsDp.head())
+    return dataValsMean, dataValsDp
 
 
 dataValsStats = pd.DataFrame()
-effectSizeVals = pd.DataFrame(columns=['project','additional','total'])
+effectSizeVals = pd.DataFrame(columns=['project', 'additional', 'total'])
 
 for index, project in enumerate(projects):
-	dataValsMean, dataValsDp = readResults('apfd.csv', fromVersion[index], toVersion[index]+1)
-	dataValsStats = dataValsStats.append(dataValsDp.mean(), ignore_index=True)
-#	dataValsStats = dataValsStats.append(dataValsDp.std(), ignore_index=True)
-	dataValsDp.to_csv('../../WTP-data/aggregate/rqs/%s.apfd.aggregate.csv' % project, index=False)
+    dataValsMean, dataValsDp = readResults('apfd.csv', fromVersion[index], toVersion[index] + 1)
+    mean_row = pd.DataFrame([dataValsDp.mean()])
 
-	totalEffectSize = effectSize(dataValsDp["total"], dataValsDp["total0"])
-	additionalEffectSize = effectSize(dataValsDp["additional"], dataValsDp["additional0"])
-	print("effectSize total ", totalEffectSize)
-	print("effectSize additional ", additionalEffectSize)
-	effectSizeVals = effectSizeVals.append(pd.DataFrame({'project':[project],'total':[totalEffectSize],'additional':[additionalEffectSize]}), ignore_index=True, sort=False)
-	
-	if index == 0:
-		dataValsAll = dataValsDp
-	else:
-		dataValsAll = dataValsAll.append(dataValsDp)
+    dataValsStats = pd.concat([dataValsStats, mean_row], ignore_index=True)
+    # print("dataValsDp head:\n", dataValsDp.head())
+    # print("dataValsMean head:\n", dataValsMean.head())
+    # print("mean_row head:\n", mean_row.head())
+    # print("dataValsStats head:\n", dataValsStats.head())
+    #	dataValsStats = dataValsStats.append(dataValsDp.std(), ignore_index=True)
 
+    output_dir = '../../WTP-data/aggregate/rqs'
+    os.makedirs(output_dir, exist_ok=True)  # Creates the directory if it doesn't exist
+    dataValsDp.to_csv(f'{output_dir}/{project}.apfd.aggregate.csv', index=False)
 
-	dataValsDpForPlot = dataValsDp.rename(columns={"additional0": "Traditional", "additional": "Modified"})
-	dataValsMeanForPlot = dataValsMean.rename(columns={"additional": "Modified Additional"})
+    # debug
+    print("dataValsDp head:\n", dataValsDp.head())
+    # print("dataValsDp['total']:\n", dataValsDp['total'])
+    # print("dataValsDp['total0']:\n", dataValsDp['total0'])
+    # print("dataValsDp['additional']:\n", dataValsDp['additional'])
+    # print("dataValsDp['additional0']:\n", dataValsDp['additional0'])
 
+    totalEffectSize = effectSize(dataValsDp["total"], dataValsDp["total0"])
+    additionalEffectSize = effectSize(dataValsDp["additional"], dataValsDp["additional0"])
 
-#	print(aggregate_data)
+    print("effectSize total ", totalEffectSize)
+    print("effectSize additional ", additionalEffectSize)
+    effectSizeVals = pd.concat([effectSizeVals, pd.DataFrame(
+        {'project': [project], 'total': [totalEffectSize], 'additional': [additionalEffectSize]})], ignore_index=True)
 
-	plt.close('all')
-	plot1 = dataValsDpForPlot.boxplot(column=['Traditional', 'Modified'])
-	plot1.set_ylabel('APFD (%)')
-	plot1.set_ylim(0, 100)
+    if index == 0:
+        dataValsAll = dataValsDp
+    else:
+        dataValsAll = pd.concat([dataValsAll, dataValsDp])
 
-	fig1 = plot1.get_figure()
-#	fig1.suptitle(project, fontsize=20)
-	fig1.savefig('../../WTP-data/aggregate/rqs/%s.additional.apfd.boxplot.png' % project)	
+    dataValsDpForPlot = dataValsDp.rename(columns={"additional0": "Traditional", "additional": "Modified"})
+    dataValsMeanForPlot = dataValsMean.rename(columns={"additional": "Modified Additional"})
 
-	plt.close('all')
-	plot2 = dataValsMeanForPlot.plot(x='C_dp', y=['Modified Additional'], style='.-', grid=True, xlim=(0,1))	
+    #	print(aggregate_data)
 
-	plot2.set_xlabel('C_dp (1-P0)')
-	plot2.set_ylabel('APFD (%)')
-	plot2.set_ylim(40, 80)
+    plt.close('all')
+    plot1 = dataValsDpForPlot.boxplot(column=['Traditional', 'Modified'])
+    plot1.set_ylabel('APFD (%)')
+    plot1.set_ylim(0, 100)
 
-	fig2 = plot2.get_figure()
-#	fig2.suptitle(project, fontsize=20)
-	fig2.savefig('../../WTP-data/aggregate/rqs/%s.additional.apfd.plot.png' % project)
+    fig1 = plot1.get_figure()
+    #	fig1.suptitle(project, fontsize=20)
+    fig1.savefig('../../WTP-data/aggregate/rqs/%s.additional.apfd.boxplot.png' % project)
 
+    plt.close('all')
+    plot2 = dataValsMeanForPlot.plot(x='C_dp', y=['Modified Additional'], style='.-', grid=True, xlim=(0, 1))
 
-	dataValsDpForPlot = dataValsDp.rename(columns={"total0": "Traditional", "total": "Modified"})
-	dataValsMeanForPlot = dataValsMean.rename(columns={"total": "Modified Total"})
+    plot2.set_xlabel('C_dp (1-P0)')
+    plot2.set_ylabel('APFD (%)')
+    plot2.set_ylim(40, 80)
 
+    fig2 = plot2.get_figure()
+    #	fig2.suptitle(project, fontsize=20)
+    fig2.savefig('../../WTP-data/aggregate/rqs/%s.additional.apfd.plot.png' % project)
 
-	#	print(aggregate_data)
+    dataValsDpForPlot = dataValsDp.rename(columns={"total0": "Traditional", "total": "Modified"})
+    dataValsMeanForPlot = dataValsMean.rename(columns={"total": "Modified Total"})
 
-	plt.close('all')
-	plot1 = dataValsDpForPlot.boxplot(column=['Traditional', 'Modified'])
-	plot1.set_ylabel('APFD (%)')
-	plot1.set_ylim(0, 100)
+    #	print(aggregate_data)
 
-	fig1 = plot1.get_figure()
-#	fig1.suptitle(project, fontsize=20)
-	fig1.savefig('../../WTP-data/aggregate/rqs/%s.total.apfd.boxplot.png' % project)	
+    plt.close('all')
+    plot1 = dataValsDpForPlot.boxplot(column=['Traditional', 'Modified'])
+    plot1.set_ylabel('APFD (%)')
+    plot1.set_ylim(0, 100)
 
-	plt.close('all')
-	plot2 = dataValsMeanForPlot.plot(x='C_dp', y=['Modified Total'], style='.-', grid=True, xlim=(0,1))	
+    fig1 = plot1.get_figure()
+    #	fig1.suptitle(project, fontsize=20)
+    fig1.savefig('../../WTP-data/aggregate/rqs/%s.total.apfd.boxplot.png' % project)
 
-	plot2.set_xlabel('C_dp (1-P0)')
-	plot2.set_ylabel('APFD (%)')
-	plot2.set_ylim(40, 80)
+    plt.close('all')
+    plot2 = dataValsMeanForPlot.plot(x='C_dp', y=['Modified Total'], style='.-', grid=True, xlim=(0, 1))
 
-	fig2 = plot2.get_figure()
-#	fig2.suptitle(project, fontsize=20)
-	fig2.savefig('../../WTP-data/aggregate/rqs/%s.total.apfd.plot.png' % project)
+    plot2.set_xlabel('C_dp (1-P0)')
+    plot2.set_ylabel('APFD (%)')
+    plot2.set_ylim(40, 80)
+
+    fig2 = plot2.get_figure()
+    #	fig2.suptitle(project, fontsize=20)
+    fig2.savefig('../../WTP-data/aggregate/rqs/%s.total.apfd.plot.png' % project)
 
 dataValsAll = dataValsAll.reset_index()
 
-#dataValsSumOfAll = dataValsSumOfAll/len(projects)
-#plot = dataValsSumOfAll.plot(x='C_dp')	
-#fig = plot.get_figure()
-#fig.savefig('../../WTP-data/aggregate/all.png')
+# dataValsSumOfAll = dataValsSumOfAll/len(projects)
+# plot = dataValsSumOfAll.plot(x='C_dp')
+# fig = plot.get_figure()
+# fig.savefig('../../WTP-data/aggregate/all.png')
 
-#print("VD_A total ", VD_A(dataValsAll["total0"], dataValsAll["total"]))
-#print("VD_A additional ", VD_A(dataValsAll["additional0"], dataValsAll["additional"]))
+# print("VD_A total ", VD_A(dataValsAll["total0"], dataValsAll["total"]))
+# print("VD_A additional ", VD_A(dataValsAll["additional0"], dataValsAll["additional"]))
 totalEffectSize = effectSize(dataValsAll["total"], dataValsAll["total0"])
 additionalEffectSize = effectSize(dataValsAll["additional"], dataValsAll["additional0"])
 print("effectSize total ", totalEffectSize)
 print("effectSize additional ", additionalEffectSize)
-effectSizeValsMean = effectSizeVals.mean()
-effectSizeVals = effectSizeVals.append(pd.DataFrame({'project':['average'],'total':[effectSizeValsMean['total']],'additional':[effectSizeValsMean['additional']]}), ignore_index=True, sort=False)
-effectSizeVals = effectSizeVals.append(pd.DataFrame({'project':['all'],'total':[totalEffectSize],'additional':[additionalEffectSize]}), ignore_index=True, sort=False)
+print("effectSizeVals additional ", effectSizeVals)
+effectSizeValsMean = effectSizeVals.select_dtypes(include='number').mean()
 
-print("additional wicoxon-text p-value:", stats.wilcoxon(dataValsAll["additional"],dataValsAll["additional0"]))
-print("total wicoxon-text p-value:", stats.wilcoxon(dataValsAll["total"],dataValsAll["total0"]))
-print("additional/total wicoxon-text p-value:", stats.wilcoxon(dataValsAll["additional0"],dataValsAll["total0"]))
+# Replace append with pd.concat for effectSizeVals
+effectSizeVals = pd.concat([
+    effectSizeVals,
+    pd.DataFrame({'project': ['average'], 'total': [effectSizeValsMean['total']],
+                  'additional': [effectSizeValsMean['additional']]})
+], ignore_index=True)
 
-dataValsAll = dataValsAll.append(dataValsAll.mean(), ignore_index=True)
+effectSizeVals = pd.concat([
+    effectSizeVals,
+    pd.DataFrame({'project': ['all'], 'total': [totalEffectSize], 'additional': [additionalEffectSize]})
+], ignore_index=True)
+
+# Wilcoxon test results
+print("additional wilcoxon-test p-value:", stats.wilcoxon(dataValsAll["additional"], dataValsAll["additional0"]))
+print("total wilcoxon-test p-value:", stats.wilcoxon(dataValsAll["total"], dataValsAll["total0"]))
+print("additional/total wilcoxon-test p-value:", stats.wilcoxon(dataValsAll["additional0"], dataValsAll["total0"]))
+
+# Replace append with pd.concat for dataValsAll
+dataValsAll = pd.concat([dataValsAll, pd.DataFrame([dataValsAll.mean()])], ignore_index=True)
+
+# Save to CSV files
 dataValsAll.to_csv('../../WTP-data/aggregate/rqs/all.apfd.aggregate.csv', index=False)
 dataValsStats.to_csv('../../WTP-data/aggregate/rqs/stats.apfd.aggregate.csv', index=False)
-
 effectSizeVals.to_csv('../../WTP-data/aggregate/rqs/effectsize.apfd.csv', index=False)

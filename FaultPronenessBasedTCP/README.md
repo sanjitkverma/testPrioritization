@@ -12,7 +12,8 @@ This package is used in multiple steps: defect prediction, prioritization and re
     ```
     git clone https://github.com/khesoem/Defects4J-Plus-M.git WTP-data
     ```
-3. Install python and neccesary packages:
+   Keith's NOTE: Make sure this outside the folder, not inside of FaultPronenessBasedTCP
+3. Install python and neccesary packages: **(CAN SKIP THIS STEP)**
     ```
     sudo apt-get install python3 python3-pip python3-venv
     ```
