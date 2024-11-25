@@ -43,16 +43,5 @@ This package is used in multiple steps: defect prediction, prioritization and re
     python3 -u aggregate_results.py
     ```
 
-## Citing in academic work
-If you are using this project for your research, we would be really glad if you cite our paper using the following bibtex:
-```
-@article{mahdieh2020incorporating,
-  title={Incorporating fault-proneness estimations into coverage-based test case prioritization methods},
-  author={Mahdieh, Mostafa and Mirian-Hosseinabadi, Seyed-Hassan and Etemadi, Khashayar and Nosrati, Ali and Jalali, Sajad},
-  journal={Information and Software Technology},
-  volume={121},
-  pages={106269},
-  year={2020},
-  publisher={Elsevier}
-}
-```
+## CSC 591 Team: Sanjit Verma, Alex Taylor, Keith Tran, Arul Sharma
+
